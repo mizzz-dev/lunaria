@@ -1,0 +1,1665 @@
+openapi: 3.1.0
+info:
+  title: Lunaria API
+  version: 1.0.0
+  description: |
+    Lunaria Discord コミュニティ管理プラットフォームの REST API です。
+    すべてのレスポンスは `{ success: true, data: T }` または `{ success: false, error: { code, message } }` の形式で返却されます。
+
+servers:
+  - url: http://localhost:4000/api/v1
+    description: ローカル開発環境
+  - url: https://api.lunaria.example.com/api/v1
+    description: 本番環境
+
+tags:
+  - name: auth
+    description: Discord OAuth2 認証
+  - name: guilds
+    description: ギルド基本操作
+  - name: plugins
+    description: プラグイン管理
+  - name: rules
+    description: ルールエンジン
+  - name: quotes
+    description: 名言プラグイン
+  - name: polls
+    description: 投票プラグイン
+  - name: events
+    description: イベントプラグイン
+  - name: lfg
+    description: LFG（メンバー募集）プラグイン
+  - name: team-splits
+    description: チーム分けプラグイン
+  - name: faqs
+    description: FAQ プラグイン
+  - name: reminders
+    description: リマインダープラグイン
+  - name: auto-responses
+    description: 自動応答プラグイン
+  - name: daily-content
+    description: 定期コンテンツプラグイン
+  - name: moderation
+    description: モデレーション
+  - name: analytics
+    description: アナリティクス
+  - name: audit-logs
+    description: 監査ログ
+  - name: config-versions
+    description: 設定バージョン管理
+  - name: memberships
+    description: メンバー・RBAC 管理
+  - name: roles
+    description: RBAC ロール管理
+  - name: templates
+    description: テンプレート
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: lunaria_token
+  schemas:
+    ApiError:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: NOT_FOUND
+            message:
+              type: string
+              example: Resource not found
+            details:
+              {}
+    Pagination:
+      type: object
+      required: [page, pageSize, total, hasMore]
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        hasMore:
+          type: boolean
+    Guild:
+      type: object
+      properties:
+        id:
+          type: string
+        discordId:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+          nullable: true
+        ownerId:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    Plugin:
+      type: object
+      properties:
+        pluginKey:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        billingTier:
+          type: string
+          enum: [free, pro, enterprise]
+        isStub:
+          type: boolean
+        stubNote:
+          type: string
+          nullable: true
+        enabled:
+          type: boolean
+        config:
+          type: object
+    Rule:
+      type: object
+      properties:
+        id:
+          type: string
+        guildId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        enabled:
+          type: boolean
+        trigger:
+          type: string
+        triggerConfig:
+          type: object
+        conditions:
+          type: array
+          items:
+            type: object
+        actions:
+          type: array
+          items:
+            type: object
+        priority:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+        guildId:
+          type: string
+        actorId:
+          type: string
+          nullable: true
+        actorType:
+          type: string
+          enum: [user, bot, system]
+        action:
+          type: string
+        targetType:
+          type: string
+          nullable: true
+        targetId:
+          type: string
+          nullable: true
+        before:
+          {}
+        after:
+          {}
+        createdAt:
+          type: string
+          format: date-time
+
+security:
+  - cookieAuth: []
+
+paths:
+  # ---- Auth ----
+  /auth/login:
+    get:
+      tags: [auth]
+      summary: Discord OAuth2 ログインにリダイレクト
+      security: []
+      responses:
+        '302':
+          description: Discord 認可 URL へリダイレクト
+
+  /auth/callback:
+    get:
+      tags: [auth]
+      summary: OAuth2 コールバック。JWT Cookie を発行してダッシュボードへリダイレクト
+      security: []
+      parameters:
+        - in: query
+          name: code
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: state
+          schema:
+            type: string
+      responses:
+        '302':
+          description: ダッシュボードへリダイレクト
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: 認証済みユーザー情報を取得
+      responses:
+        '200':
+          description: ユーザー情報
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      discordId:
+                        type: string
+                      username:
+                        type: string
+                      avatar:
+                        type: string
+                        nullable: true
+        '401':
+          description: 未認証
+
+  /auth/guilds:
+    get:
+      tags: [auth]
+      summary: ユーザーが管理できるギルド一覧
+      responses:
+        '200':
+          description: ギルド一覧
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: ログアウト（Cookie を削除）
+      responses:
+        '200':
+          description: ログアウト成功
+
+  # ---- Guilds ----
+  /guilds/{guildId}:
+    get:
+      tags: [guilds]
+      summary: ギルド情報を取得
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ギルド情報
+        '404':
+          description: ギルドが見つからない
+
+  /guilds/{guildId}/dashboard:
+    get:
+      tags: [guilds]
+      summary: ダッシュボード概要統計を取得
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 統計情報
+
+  /guilds/{guildId}/settings:
+    get:
+      tags: [guilds]
+      summary: ギルド設定を取得
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ギルド設定
+    patch:
+      tags: [guilds]
+      summary: ギルド設定を更新
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: 更新後のギルド設定
+
+  # ---- Plugins ----
+  /guilds/{guildId}/plugins:
+    get:
+      tags: [plugins]
+      summary: プラグイン一覧（ギルドの有効状態付き）
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: プラグイン一覧
+
+  /guilds/{guildId}/plugins/{pluginKey}:
+    get:
+      tags: [plugins]
+      summary: プラグイン詳細
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: pluginKey
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: プラグイン詳細
+    patch:
+      tags: [plugins]
+      summary: プラグイン設定を更新
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: pluginKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                config:
+                  type: object
+      responses:
+        '200':
+          description: 更新後の設定
+
+  /guilds/{guildId}/plugins/{pluginKey}/enable:
+    post:
+      tags: [plugins]
+      summary: プラグインを有効化
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: pluginKey
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 有効化成功
+
+  /guilds/{guildId}/plugins/{pluginKey}/disable:
+    post:
+      tags: [plugins]
+      summary: プラグインを無効化
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: pluginKey
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 無効化成功
+
+  # ---- Rules ----
+  /guilds/{guildId}/rules:
+    get:
+      tags: [rules]
+      summary: ルール一覧（ページネーション）
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: ルール一覧
+    post:
+      tags: [rules]
+      summary: ルールを作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, trigger]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                enabled:
+                  type: boolean
+                  default: true
+                trigger:
+                  type: string
+                  enum: [messageCreate, memberJoin, memberLeave, reactionAdd, scheduledTime, pollClose, eventStart, lfgPost]
+                triggerConfig:
+                  type: object
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                actions:
+                  type: array
+                  items:
+                    type: object
+                priority:
+                  type: integer
+                  default: 0
+      responses:
+        '201':
+          description: 作成されたルール
+
+  /guilds/{guildId}/rules/{ruleId}:
+    get:
+      tags: [rules]
+      summary: ルール詳細
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: ruleId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ルール詳細
+    patch:
+      tags: [rules]
+      summary: ルールを更新
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: ruleId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: 更新後のルール
+    delete:
+      tags: [rules]
+      summary: ルールを削除
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: ruleId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 削除成功
+
+  /guilds/{guildId}/rules/{ruleId}/test:
+    post:
+      tags: [rules]
+      summary: ルールをドライラン（アクション実行なし）
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: ruleId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [context]
+              properties:
+                context:
+                  type: object
+                  description: テスト用コンテキスト（content, userId, channelId, roles 等）
+      responses:
+        '200':
+          description: テスト結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conditionsMet:
+                    type: boolean
+                  conditionResults:
+                    type: array
+                    items:
+                      type: object
+
+  # ---- Quotes ----
+  /guilds/{guildId}/quotes:
+    get:
+      tags: [quotes]
+      summary: 名言一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: tag
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 名言一覧
+    post:
+      tags: [quotes]
+      summary: 名言を追加
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                author:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: 追加された名言
+
+  /guilds/{guildId}/quotes/{quoteId}:
+    delete:
+      tags: [quotes]
+      summary: 名言を削除
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: quoteId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 削除成功
+
+  # ---- Polls ----
+  /guilds/{guildId}/polls:
+    get:
+      tags: [polls]
+      summary: 投票一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 投票一覧
+    post:
+      tags: [polls]
+      summary: 投票を作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question, options]
+              properties:
+                question:
+                  type: string
+                options:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 2
+                channelId:
+                  type: string
+                endsAt:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: 作成された投票
+
+  /guilds/{guildId}/polls/{pollId}/close:
+    post:
+      tags: [polls]
+      summary: 投票を締め切る
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: pollId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 締め切り成功
+
+  # ---- Events ----
+  /guilds/{guildId}/events:
+    get:
+      tags: [events]
+      summary: イベント一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: イベント一覧
+    post:
+      tags: [events]
+      summary: イベントを作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, startsAt]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                startsAt:
+                  type: string
+                  format: date-time
+                endsAt:
+                  type: string
+                  format: date-time
+                channelId:
+                  type: string
+                maxParticipants:
+                  type: integer
+      responses:
+        '201':
+          description: 作成されたイベント
+
+  /guilds/{guildId}/events/{eventId}/cancel:
+    post:
+      tags: [events]
+      summary: イベントをキャンセル
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: キャンセル成功
+
+  # ---- LFG ----
+  /guilds/{guildId}/lfg:
+    get:
+      tags: [lfg]
+      summary: LFG 投稿一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: LFG 投稿一覧
+    post:
+      tags: [lfg]
+      summary: LFG 投稿を作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                game:
+                  type: string
+                maxPlayers:
+                  type: integer
+      responses:
+        '201':
+          description: 作成された LFG 投稿
+
+  /guilds/{guildId}/lfg/{postId}:
+    patch:
+      tags: [lfg]
+      summary: LFG 投稿を更新
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: 更新後の LFG 投稿
+    delete:
+      tags: [lfg]
+      summary: LFG 投稿を削除
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 削除成功
+
+  # ---- Team Splits ----
+  /guilds/{guildId}/team-splits:
+    get:
+      tags: [team-splits]
+      summary: チーム分け一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: チーム分け一覧
+    post:
+      tags: [team-splits]
+      summary: チーム分けを実行
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, memberIds, teamCount]
+              properties:
+                name:
+                  type: string
+                memberIds:
+                  type: array
+                  items:
+                    type: string
+                teamCount:
+                  type: integer
+                  minimum: 2
+      responses:
+        '201':
+          description: 作成されたチーム分け
+
+  /guilds/{guildId}/team-splits/{setId}/reroll:
+    post:
+      tags: [team-splits]
+      summary: チーム分けを再抽選
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: setId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 再抽選後のチーム分け
+
+  # ---- FAQs ----
+  /guilds/{guildId}/faqs:
+    get:
+      tags: [faqs]
+      summary: FAQ 一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        '200':
+          description: FAQ 一覧
+    post:
+      tags: [faqs]
+      summary: FAQ を作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question, answer]
+              properties:
+                question:
+                  type: string
+                answer:
+                  type: string
+                category:
+                  type: string
+                order:
+                  type: integer
+      responses:
+        '201':
+          description: 作成された FAQ
+
+  /guilds/{guildId}/faqs/{faqId}:
+    patch:
+      tags: [faqs]
+      summary: FAQ を更新
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: faqId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: 更新後の FAQ
+    delete:
+      tags: [faqs]
+      summary: FAQ を削除
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: faqId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 削除成功
+
+  # ---- Reminders ----
+  /guilds/{guildId}/reminders:
+    get:
+      tags: [reminders]
+      summary: リマインダー一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: リマインダー一覧
+
+  # ---- Auto-Responses ----
+  /guilds/{guildId}/auto-responses:
+    get:
+      tags: [auto-responses]
+      summary: 自動応答一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 自動応答一覧
+    post:
+      tags: [auto-responses]
+      summary: 自動応答を作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trigger, response, matchType]
+              properties:
+                trigger:
+                  type: string
+                response:
+                  type: string
+                matchType:
+                  type: string
+                  enum: [exact, keyword, startsWith, regex]
+                enabled:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: 作成された自動応答
+
+  /guilds/{guildId}/auto-responses/{id}:
+    delete:
+      tags: [auto-responses]
+      summary: 自動応答を削除
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 削除成功
+
+  # ---- Daily Content ----
+  /guilds/{guildId}/daily-content/jobs:
+    get:
+      tags: [daily-content]
+      summary: 定期コンテンツジョブ一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ジョブ一覧
+    post:
+      tags: [daily-content]
+      summary: ジョブを作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contentType, channelId, cronExpression]
+              properties:
+                contentType:
+                  type: string
+                  enum: [quote, custom]
+                channelId:
+                  type: string
+                cronExpression:
+                  type: string
+                  example: "0 9 * * *"
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: 作成されたジョブ
+
+  /guilds/{guildId}/daily-content/jobs/{jobId}:
+    patch:
+      tags: [daily-content]
+      summary: ジョブを更新
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: 更新後のジョブ
+
+  /guilds/{guildId}/daily-content/runs:
+    get:
+      tags: [daily-content]
+      summary: 実行履歴一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 実行履歴
+
+  # ---- Moderation ----
+  /guilds/{guildId}/moderation/rules:
+    get:
+      tags: [moderation]
+      summary: モデレーションルール一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ルール一覧
+    post:
+      tags: [moderation]
+      summary: モデレーションルールを作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, ruleType, action]
+              properties:
+                name:
+                  type: string
+                ruleType:
+                  type: string
+                  enum: [spam, banned_word, link_filter, mention_spam, caps_abuse, duplicate_message]
+                action:
+                  type: string
+                  enum: [warn, mute, kick, ban, delete, log]
+                config:
+                  type: object
+                actionConfig:
+                  type: object
+      responses:
+        '201':
+          description: 作成されたルール
+
+  /guilds/{guildId}/moderation/actions:
+    get:
+      tags: [moderation]
+      summary: モデレーションアクション履歴
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: targetId
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: アクション一覧
+    post:
+      tags: [moderation]
+      summary: モデレーションアクションを手動実行
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetId, actionType]
+              properties:
+                targetId:
+                  type: string
+                actionType:
+                  type: string
+                  enum: [warn, mute, kick, ban, unmute, unban]
+                reason:
+                  type: string
+                expiresAt:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: 実行されたアクション
+
+  # ---- Analytics ----
+  /guilds/{guildId}/analytics/summary:
+    get:
+      tags: [analytics]
+      summary: アナリティクスサマリー
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: サマリー統計
+
+  /guilds/{guildId}/analytics/daily:
+    get:
+      tags: [analytics]
+      summary: 日別アナリティクス
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: 日別データ
+
+  # ---- Audit Logs ----
+  /guilds/{guildId}/audit-logs:
+    get:
+      tags: [audit-logs]
+      summary: 監査ログ一覧（ページネーション）
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: actorId
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 監査ログ一覧
+
+  # ---- Config Versions ----
+  /guilds/{guildId}/config-versions:
+    get:
+      tags: [config-versions]
+      summary: 設定バージョン一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: scope
+          schema:
+            type: string
+            description: 例 plugin:quote, rule:xxx, guild_settings
+      responses:
+        '200':
+          description: バージョン一覧
+
+  /guilds/{guildId}/config-versions/{versionId}/rollback:
+    post:
+      tags: [config-versions]
+      summary: 指定バージョンへロールバック
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ロールバック成功
+
+  # ---- Memberships ----
+  /guilds/{guildId}/memberships:
+    get:
+      tags: [memberships]
+      summary: メンバー一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: メンバー一覧
+
+  /guilds/{guildId}/memberships/{membershipId}:
+    get:
+      tags: [memberships]
+      summary: メンバー詳細
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: membershipId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: メンバー詳細
+    patch:
+      tags: [memberships]
+      summary: メンバーに RBAC ロールを割り当て
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: membershipId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roleIds]
+              properties:
+                roleIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: 更新後の割り当て
+
+  # ---- Roles ----
+  /guilds/{guildId}/roles:
+    get:
+      tags: [roles]
+      summary: RBAC ロール一覧（システムロール含む）
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ロール一覧
+    post:
+      tags: [roles]
+      summary: カスタムロールを作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                permissionKeys:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: 作成されたロール
+
+  /guilds/{guildId}/roles/{roleId}:
+    patch:
+      tags: [roles]
+      summary: ロールを更新（システムロール不可）
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                permissionKeys:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: 更新後のロール
+    delete:
+      tags: [roles]
+      summary: ロールを削除（システムロール不可）
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 削除成功
+
+  # ---- Templates ----
+  /templates:
+    get:
+      tags: [templates]
+      summary: 公開テンプレート一覧
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: テンプレート一覧
+
+  /guilds/{guildId}/templates:
+    post:
+      tags: [templates]
+      summary: ギルドプライベートテンプレートを作成
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, category, body, visibility]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                category:
+                  type: string
+                  enum: [rule, auto_response, poll, event, faq, moderation]
+                body:
+                  type: object
+                visibility:
+                  type: string
+                  enum: [official, community, private]
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: 作成されたテンプレート
+
+  /guilds/{guildId}/templates/{templateId}/apply:
+    post:
+      tags: [templates]
+      summary: テンプレートを適用
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: templateId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 適用結果
