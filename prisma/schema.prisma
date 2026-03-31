@@ -32,12 +32,14 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  memberships     GuildMembership[]
-  roleAssignments GuildMemberRoleAssignment[]
-  auditLogs       AuditLog[]
-  reminders       Reminder[]
-  consentRecords  ConsentRecord[]
-  gameLinks       GameLink[]
+  memberships                GuildMembership[]
+  roleAssignments            GuildMemberRoleAssignment[]
+  auditLogs                  AuditLog[]
+  reminders                  Reminder[]
+  consentRecords             ConsentRecord[]
+  gameLinks                  GameLink[]
+  notificationSubscriptions  NotificationSubscription[]
+  notifications              Notification[]
 
   @@map("users")
 }
@@ -53,28 +55,39 @@ model Guild {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  memberships       GuildMembership[]
-  pluginSettings    GuildPluginSetting[]
-  configVersions    ConfigVersion[]
-  auditLogs         AuditLog[]
-  rbacRoles         RbacRole[]
-  rules             Rule[]
-  ruleRuns          RuleRun[]
-  autoResponses     AutoResponse[]
-  quotes            Quote[]
-  dailyContentJobs  DailyContentJob[]
-  polls             Poll[]
-  events            Event[]
-  lfgPosts          LfgPost[]
-  teamSets          TeamSet[]
-  faqArticles       FaqArticle[]
-  reminders         Reminder[]
-  moderationRules   ModerationRule[]
-  moderationActions ModerationAction[]
-  analyticsEvents   AnalyticsEvent[]
-  analyticsDaily    AnalyticsDaily[]
-  templates         Template[]
-  externalServers   ExternalServer[]
+  memberships          GuildMembership[]
+  pluginSettings       GuildPluginSetting[]
+  configVersions       ConfigVersion[]
+  auditLogs            AuditLog[]
+  rbacRoles            RbacRole[]
+  rules                Rule[]
+  ruleRuns             RuleRun[]
+  autoResponses        AutoResponse[]
+  quotes               Quote[]
+  dailyContentJobs     DailyContentJob[]
+  polls                Poll[]
+  events               Event[]
+  lfgPosts             LfgPost[]
+  teamSets             TeamSet[]
+  faqArticles          FaqArticle[]
+  reminders            Reminder[]
+  moderationRules      ModerationRule[]
+  moderationActions    ModerationAction[]
+  analyticsEvents      AnalyticsEvent[]
+  analyticsDaily       AnalyticsDaily[]
+  templates            Template[]
+  externalServers      ExternalServer[]
+  welcomeConfig        WelcomeConfig?
+  levelConfig          LevelConfig?
+  userLevels           UserLevel[]
+  levelRewards         LevelReward[]
+  ticketConfig         TicketConfig?
+  tempVcConfig         TempVcConfig?
+  voiceLogConfig       VoiceLogConfig?
+  customComponents     CustomComponent[]
+  aiModerationConfig   AiModerationConfig?
+  translationConfig    TranslationConfig?
+  scheduledMessages    ScheduledMessage[]
 
   @@map("guilds")
 }
@@ -457,9 +470,10 @@ model Poll {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  guild   Guild        @relation(fields: [guildId], references: [id], onDelete: Cascade)
-  options PollOption[]
-  votes   PollVote[]
+  guild       Guild           @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  options     PollOption[]
+  votes       PollVote[]
+  roleRewards PollRoleReward[]
 
   @@index([guildId])
   @@map("polls")
@@ -472,8 +486,9 @@ model PollOption {
   emoji    String?
   position Int    @default(0)
 
-  poll  Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  votes PollVote[]
+  poll        Poll            @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes       PollVote[]
+  roleRewards PollRoleReward[]
 
   @@index([pollId])
   @@map("poll_options")
@@ -919,4 +934,463 @@ model ExternalServerAction {
 
   @@index([serverId])
   @@map("external_server_actions")
+}
+
+// =============================================
+// Feature 1: Welcome Message
+// =============================================
+
+model WelcomeConfig {
+  id            String   @id @default(cuid())
+  guildId       String   @unique
+  enabled       Boolean  @default(false)
+  channelId     String?
+  dmEnabled     Boolean  @default(false)
+  message       String   @default("Welcome to the server, {user}!")
+  dmMessage     String?
+  embedColor    Int      @default(6579695) // 0x6466EF
+  showAvatar    Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@map("welcome_configs")
+}
+
+// =============================================
+// Feature 2: Level System
+// =============================================
+
+model LevelConfig {
+  id               String   @id @default(cuid())
+  guildId          String   @unique
+  enabled          Boolean  @default(false)
+  xpPerMessage     Int      @default(15)
+  xpCooldownSec    Int      @default(60)
+  levelUpChannelId String?
+  levelUpMessage   String   @default("🎉 {user} reached level {level}!")
+  ignoredChannels  String[] @default([])
+  ignoredRoles     String[] @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@map("level_configs")
+}
+
+model UserLevel {
+  id        String    @id @default(cuid())
+  guildId   String
+  userId    String    // Discord snowflake
+  xp        Int       @default(0)
+  level     Int       @default(0)
+  messages  Int       @default(0)
+  lastXpAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId])
+  @@map("user_levels")
+}
+
+model LevelReward {
+  id            String   @id @default(cuid())
+  guildId       String
+  level         Int
+  roleId        String   // Discord role snowflake to assign
+  removeOnLevel Int?     // Remove this role when user reaches this level
+  createdAt     DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, level, roleId])
+  @@index([guildId])
+  @@map("level_rewards")
+}
+
+// =============================================
+// Feature 3: Ticket System
+// =============================================
+
+model TicketConfig {
+  id              String   @id @default(cuid())
+  guildId         String   @unique
+  enabled         Boolean  @default(false)
+  panelChannelId  String?
+  categoryId      String?
+  supportRoleIds  String[] @default([])
+  welcomeMessage  String   @default("Support will be with you shortly.")
+  maxOpenPerUser  Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  guild   Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  tickets Ticket[]
+
+  @@map("ticket_configs")
+}
+
+model Ticket {
+  id         String    @id @default(cuid())
+  guildId    String
+  configId   String
+  channelId  String    // Discord channel snowflake
+  openedBy   String    // Discord snowflake
+  claimedBy  String?
+  subject    String?
+  // "open" | "claimed" | "closed"
+  status     String    @default("open")
+  closedAt   DateTime?
+  closedBy   String?
+  transcript String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  config TicketConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, status])
+  @@map("tickets")
+}
+
+// =============================================
+// Feature 4: Temporary Voice Channels
+// =============================================
+
+model TempVcConfig {
+  id               String   @id @default(cuid())
+  guildId          String   @unique
+  enabled          Boolean  @default(false)
+  triggerChannelId String?
+  categoryId       String?
+  nameTemplate     String   @default("{user}'s Channel")
+  maxChannels      Int      @default(10)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  guild    Guild              @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  channels TempVoiceChannel[]
+
+  @@map("temp_vc_configs")
+}
+
+model TempVoiceChannel {
+  id        String   @id @default(cuid())
+  guildId   String
+  configId  String
+  channelId String   // Discord channel snowflake
+  ownerId   String   // Discord snowflake
+  createdAt DateTime @default(now())
+
+  config TempVcConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId])
+  @@index([guildId])
+  @@map("temp_voice_channels")
+}
+
+// =============================================
+// Feature 5: Poll Role Rewards
+// =============================================
+
+model PollRoleReward {
+  id        String   @id @default(cuid())
+  pollId    String
+  optionId  String
+  roleId    String   // Discord role snowflake
+  createdAt DateTime @default(now())
+
+  poll   Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, optionId, roleId])
+  @@map("poll_role_rewards")
+}
+
+// =============================================
+// Feature 6: Message Scheduler
+// =============================================
+
+model ScheduledMessage {
+  id          String    @id @default(cuid())
+  guildId     String
+  name        String
+  channelId   String
+  content     String
+  embedData   Json?
+  scheduledAt DateTime
+  // "pending" | "sent" | "cancelled"
+  status      String    @default("pending")
+  sentAt      DateTime?
+  messageId   String?
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@index([scheduledAt, status])
+  @@map("scheduled_messages")
+}
+
+// =============================================
+// Feature 7: Voice Join/Leave Log
+// =============================================
+
+model VoiceLogConfig {
+  id        String   @id @default(cuid())
+  guildId   String   @unique
+  enabled   Boolean  @default(false)
+  channelId String?
+  logJoin   Boolean  @default(true)
+  logLeave  Boolean  @default(true)
+  logMove   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild Guild      @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  logs  VoiceLog[]
+
+  @@map("voice_log_configs")
+}
+
+model VoiceLog {
+  id            String   @id @default(cuid())
+  guildId       String
+  configId      String
+  userId        String   // Discord snowflake
+  channelId     String?
+  fromChannelId String?
+  // "join" | "leave" | "move"
+  eventType     String
+  occurredAt    DateTime @default(now())
+
+  config VoiceLogConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, occurredAt])
+  @@map("voice_logs")
+}
+
+// =============================================
+// Feature 8: Custom Buttons / Select Menus
+// =============================================
+
+model CustomComponent {
+  id            String   @id @default(cuid())
+  guildId       String
+  name          String
+  // "button" | "select"
+  componentType String   @default("button")
+  label         String
+  emoji         String?
+  // "primary" | "secondary" | "success" | "danger"
+  style         String   @default("primary")
+  customId      String
+  // "role_add" | "role_remove" | "role_toggle" | "reply"
+  actionType    String   @default("role_toggle")
+  actionConfig  Json     @default("{}")
+  enabled       Boolean  @default(true)
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  guild        Guild                  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  interactions ComponentInteraction[]
+
+  @@unique([guildId, customId])
+  @@index([guildId])
+  @@map("custom_components")
+}
+
+model ComponentInteraction {
+  id          String   @id @default(cuid())
+  componentId String
+  userId      String   // Discord snowflake
+  guildId     String
+  result      String?
+  createdAt   DateTime @default(now())
+
+  component CustomComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@index([componentId])
+  @@map("component_interactions")
+}
+
+// =============================================
+// Feature 9: AI Moderation
+// =============================================
+
+model AiModerationConfig {
+  id                  String   @id @default(cuid())
+  guildId             String   @unique
+  enabled             Boolean  @default(false)
+  // "anthropic" | "openai"
+  provider            String   @default("anthropic")
+  toxicityThreshold   Float    @default(0.8)
+  spamThreshold       Float    @default(0.9)
+  // "log" | "delete" | "warn" | "mute"
+  action              String   @default("log")
+  logChannelId        String?
+  exemptRoles         String[] @default([])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  guild Guild              @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  scans AiModerationScan[]
+
+  @@map("ai_moderation_configs")
+}
+
+model AiModerationScan {
+  id          String   @id @default(cuid())
+  guildId     String
+  configId    String
+  messageId   String?
+  userId      String   // Discord snowflake
+  channelId   String?
+  content     String
+  flagged     Boolean  @default(false)
+  scores      Json     @default("{}")
+  actionTaken String?
+  createdAt   DateTime @default(now())
+
+  config AiModerationConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, createdAt])
+  @@map("ai_moderation_scans")
+}
+
+// =============================================
+// Feature 10: Translation Config
+// =============================================
+
+model TranslationConfig {
+  id                String   @id @default(cuid())
+  guildId           String   @unique
+  enabled           Boolean  @default(false)
+  triggerEmoji      String   @default("🌐")
+  defaultTargetLang String   @default("en")
+  logChannelId      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@map("translation_configs")
+}
+
+// =============================================
+// Feature 11: Cross-Server (Guild Groups)
+// =============================================
+
+model GuildGroup {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  ownerGuildId String
+  inviteCode   String   @unique @default(cuid())
+  // "open" | "invite_only"
+  joinMode     String   @default("invite_only")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members    GuildGroupMember[]
+  broadcasts CrossServerBroadcast[]
+
+  @@map("guild_groups")
+}
+
+model GuildGroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  guildId  String
+  // "owner" | "member"
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+
+  group GuildGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, guildId])
+  @@index([groupId])
+  @@map("guild_group_members")
+}
+
+model CrossServerBroadcast {
+  id          String   @id @default(cuid())
+  groupId     String
+  fromGuildId String
+  content     String
+  embedData   Json?
+  // "pending" | "sent" | "partial"
+  status      String   @default("pending")
+  sentBy      String?
+  createdAt   DateTime @default(now())
+
+  group   GuildGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  targets BroadcastTarget[]
+
+  @@index([groupId])
+  @@map("cross_server_broadcasts")
+}
+
+model BroadcastTarget {
+  id          String    @id @default(cuid())
+  broadcastId String
+  guildId     String
+  channelId   String
+  // "pending" | "sent" | "error"
+  status      String    @default("pending")
+  messageId   String?
+  error       String?
+  sentAt      DateTime?
+
+  broadcast CrossServerBroadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+
+  @@index([broadcastId])
+  @@map("broadcast_targets")
+}
+
+// =============================================
+// Feature 12: Dashboard Notifications (Web Push)
+// =============================================
+
+model NotificationSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  guildId    String?
+  endpoint   String
+  p256dh     String
+  auth       String
+  eventTypes String[] @default([])
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([userId])
+  @@map("notification_subscriptions")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  guildId   String?
+  eventType String
+  title     String
+  body      String
+  url       String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
 }

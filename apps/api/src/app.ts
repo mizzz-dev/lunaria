@@ -30,6 +30,17 @@ import { analyticsRoutes } from './routes/guilds/analytics.js';
 import { membershipRoutes } from './routes/guilds/memberships.js';
 import { roleRoutes } from './routes/guilds/roles.js';
 import { templateRoutes } from './routes/templates.js';
+import { welcomeRoutes } from './routes/guilds/welcome.js';
+import { levelRoutes } from './routes/guilds/levels.js';
+import { ticketRoutes } from './routes/guilds/tickets.js';
+import { voiceRoutes } from './routes/guilds/voice.js';
+import { pollRewardRoutes } from './routes/guilds/poll-rewards.js';
+import { scheduledMessageRoutes } from './routes/guilds/scheduled-messages.js';
+import { componentRoutes } from './routes/guilds/components.js';
+import { aiModerationRoutes } from './routes/guilds/ai-moderation.js';
+import { translationRoutes } from './routes/guilds/translation.js';
+import { guildGroupRoutes } from './routes/guild-groups.js';
+import { notificationRoutes } from './routes/notifications.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -162,6 +173,17 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(membershipRoutes, { prefix: '/api/v1/guilds' });
   await app.register(roleRoutes, { prefix: '/api/v1/guilds' });
   await app.register(templateRoutes, { prefix: '/api/v1' });
+  await app.register(welcomeRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(levelRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(ticketRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(voiceRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(pollRewardRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(scheduledMessageRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(componentRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(aiModerationRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(translationRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(guildGroupRoutes, { prefix: '/api/v1' });
+  await app.register(notificationRoutes, { prefix: '/api/v1' });
 
   // Global error handler
   app.setErrorHandler(async (error, _request, reply) => {

@@ -1,8 +1,9 @@
-import type { GuildMember } from 'discord.js';
+import { EmbedBuilder, type GuildMember } from 'discord.js';
 import { prisma } from '@lunaria/db';
 import type { RuleRecord } from '@lunaria/rule-engine';
 import type { RuleCondition, RuleAction } from '@lunaria/types';
 import { executeRulesForMemberJoin } from '../lib/rule-executor.js';
+import { client } from '../client.js';
 
 export const name = 'guildMemberAdd';
 export const once = false;
@@ -27,6 +28,45 @@ export async function execute(member: GuildMember): Promise<void> {
 
   // Track analytics
   prisma.analyticsEvent.create({ data: { guildId: guild.id, eventType: 'member_join', userId: member.id } }).catch(() => void 0);
+
+  // ── Welcome Message ──────────────────────────────────────────────
+  const welcomeConfig = await prisma.welcomeConfig.findUnique({ where: { guildId: guild.id } });
+  if (welcomeConfig?.enabled) {
+    const formatMsg = (template: string): string =>
+      template
+        .replace(/{user}/g, `<@${member.id}>`)
+        .replace(/{username}/g, member.user.username)
+        .replace(/{server}/g, member.guild.name)
+        .replace(/{count}/g, String(member.guild.memberCount));
+
+    // Channel welcome
+    if (welcomeConfig.channelId) {
+      try {
+        const channel = await client.channels.fetch(welcomeConfig.channelId);
+        if (channel?.isTextBased()) {
+          const embed = new EmbedBuilder()
+            .setColor(welcomeConfig.embedColor)
+            .setDescription(formatMsg(welcomeConfig.message))
+            .setTimestamp();
+
+          if (welcomeConfig.showAvatar) {
+            embed.setThumbnail(member.user.displayAvatarURL());
+          }
+
+          await channel.send({ embeds: [embed] });
+        }
+      } catch (e) {
+        console.error('[bot] Welcome channel message failed:', e);
+      }
+    }
+
+    // DM welcome
+    if (welcomeConfig.dmEnabled && welcomeConfig.dmMessage) {
+      try {
+        await member.send(formatMsg(welcomeConfig.dmMessage));
+      } catch { /* User may have DMs disabled */ }
+    }
+  }
 
   // Execute memberJoin rules
   const rules = await prisma.rule.findMany({ where: { guildId: guild.id, enabled: true, trigger: 'memberJoin' } });

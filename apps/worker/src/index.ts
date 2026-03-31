@@ -12,10 +12,12 @@ import { reminderWorker } from './workers/reminder.js';
 import { analyticsWorker } from './workers/analytics-aggregate.js';
 import { moderationExpireWorker } from './workers/moderation-expire.js';
 import { scheduledRuleWorker } from './workers/scheduled-rule.js';
+import { scheduledMessageWorker } from './workers/scheduled-message.js';
+import { broadcastWorker } from './workers/broadcast.js';
 import { startScheduler, stopScheduler } from './scheduler.js';
 
 console.log('[worker] Starting Lunaria Worker...');
-console.log('[worker] Workers: daily_content, reminder, analytics_aggregate, moderation_expire, scheduled_rule');
+console.log('[worker] Workers: daily_content, reminder, analytics_aggregate, moderation_expire, scheduled_rule, scheduled_message, broadcast');
 
 startScheduler();
 
@@ -28,6 +30,8 @@ async function shutdown(): Promise<void> {
     analyticsWorker.close(),
     moderationExpireWorker.close(),
     scheduledRuleWorker.close(),
+    scheduledMessageWorker.close(),
+    broadcastWorker.close(),
   ]);
   process.exit(0);
 }

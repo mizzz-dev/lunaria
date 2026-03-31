@@ -3,6 +3,7 @@ import { prisma } from '@lunaria/db';
 import type { RuleRecord } from '@lunaria/rule-engine';
 import type { RuleCondition, RuleAction } from '@lunaria/types';
 import { executeRulesForMessage } from '../lib/rule-executor.js';
+import { handleLevelXp } from '../lib/level-handler.js';
 
 export const name = 'messageCreate';
 export const once = false;
@@ -74,4 +75,7 @@ export async function execute(message: Message): Promise<void> {
   prisma.analyticsEvent.create({
     data: { guildId: guild.id, eventType: 'message', userId: message.author.id, channelId: message.channel.id },
   }).catch(() => void 0);
+
+  // ── Level XP ─────────────────────────────────────────────────────
+  handleLevelXp(message, guild.id).catch((e) => console.error('[bot] Level XP error:', e));
 }
