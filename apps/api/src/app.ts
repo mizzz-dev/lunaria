@@ -28,6 +28,7 @@ import { auditLogRoutes } from './routes/guilds/audit-logs.js';
 import { configVersionRoutes } from './routes/guilds/config-versions.js';
 import { analyticsRoutes } from './routes/guilds/analytics.js';
 import { membershipRoutes } from './routes/guilds/memberships.js';
+import { roleRoutes } from './routes/guilds/roles.js';
 import { templateRoutes } from './routes/templates.js';
 
 declare module 'fastify' {
@@ -159,6 +160,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(configVersionRoutes, { prefix: '/api/v1/guilds' });
   await app.register(analyticsRoutes, { prefix: '/api/v1/guilds' });
   await app.register(membershipRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(roleRoutes, { prefix: '/api/v1/guilds' });
   await app.register(templateRoutes, { prefix: '/api/v1' });
 
   // Global error handler
