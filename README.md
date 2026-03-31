@@ -2,184 +2,200 @@
 
 プラグイン方式とルールエンジンを備えた、コミュニティ運営向け高機能 Discord Bot ＋ 管理ダッシュボード
 
-A production-ready Discord community management platform with a plugin system, rule engine, and web dashboard.
+---
+
+## はじめる前に確認すること
+
+以下がすべてインストール済みであることを確認してください。
+
+| ツール | バージョン | 確認コマンド |
+|--------|-----------|-------------|
+| Node.js | 20 以上 | `node -v` |
+| pnpm | 9 以上 | `pnpm -v` |
+| Docker Desktop | 最新推奨 | `docker -v` |
+
+> **pnpm が入っていない場合:**
+> ```bash
+> npm install -g pnpm
+> ```
 
 ---
 
-## Architecture
+## Discord Bot の準備
+
+Bot を動かすには Discord Developer Portal でアプリを作る必要があります。
+
+1. https://discord.com/developers/applications を開く
+2. 右上の **New Application** をクリックしてアプリを作成
+3. 左メニュー **Bot** → **Reset Token** でトークンをコピー（これが `DISCORD_BOT_TOKEN`）
+4. 左メニュー **OAuth2** → `CLIENT ID` と `CLIENT SECRET` をコピー
+5. 左メニュー **Bot** → **Privileged Gateway Intents** で以下を ON にする
+   - Server Members Intent
+   - Message Content Intent
+
+---
+
+## セットアップ手順
+
+### ① リポジトリをクローン
+
+```bash
+git clone https://github.com/mizzzk-dev/lunaria.git
+cd lunaria
+```
+
+### ② 依存関係をインストール
+
+```bash
+pnpm install
+```
+
+> `node_modules` が作られます。数分かかることがあります。
+
+### ③ データベースと Redis を起動
+
+```bash
+pnpm docker:up
+```
+
+> Docker Desktop が起動している状態で実行してください。
+> PostgreSQL（DB）と Redis（キュー）がバックグラウンドで立ち上がります。
+
+起動確認:
+```bash
+docker ps
+```
+`lunaria-postgres` と `lunaria-redis` が `Up` になっていれば OK です。
+
+### ④ 環境変数ファイルを作成
+
+```bash
+cp .env.example .env
+```
+
+`.env` をテキストエディタで開き、以下の項目を書き換えます:
+
+```env
+# Discord Developer Portal でコピーしたもの
+DISCORD_BOT_TOKEN=ここにトークンを貼り付け
+DISCORD_CLIENT_ID=ここにクライアントIDを貼り付け
+DISCORD_CLIENT_SECRET=ここにクライアントシークレットを貼り付け
+
+# ランダムな秘密鍵（下のコマンドで生成できます）
+JWT_SECRET=ここに32文字以上のランダム文字列
+COOKIE_SECRET=ここに32文字以上のランダム文字列
+BOT_INTERNAL_SECRET=ここに32文字以上のランダム文字列
+NEXTAUTH_SECRET=ここに32文字以上のランダム文字列
+```
+
+> **秘密鍵の生成方法（Mac/Linux）:**
+> ```bash
+> openssl rand -base64 32
+> ```
+> 出力された文字列をそのまま貼り付けてください。
+
+### ⑤ データベースをセットアップ
+
+```bash
+pnpm db:migrate   # テーブルを作成
+pnpm db:seed      # 初期データを投入
+```
+
+> エラーが出る場合は `pnpm docker:up` を実行してから少し待って再試行してください。
+
+### ⑥ アプリを起動
+
+```bash
+pnpm dev
+```
+
+以下の4つが同時に起動します:
+
+| サービス | URL |
+|---------|-----|
+| ダッシュボード | http://localhost:3000 |
+| API サーバー | http://localhost:4000 |
+| API ドキュメント (Swagger) | http://localhost:4000/api/docs |
+| Discord Bot | Discord 上で動作 |
+
+---
+
+## 動作確認
+
+### API が動いているか確認
+
+ブラウザで http://localhost:4000/api/docs を開き、Swagger UI が表示されれば OK。
+
+### DB の中身を GUI で確認
+
+```bash
+pnpm db:studio
+```
+
+http://localhost:5555 でデータを閲覧・編集できます。
+
+### Bot がサーバーに参加しているか確認
+
+Discord Developer Portal → **OAuth2 → URL Generator** で以下を選択:
+- Scopes: `bot`, `applications.commands`
+- Bot Permissions: `Administrator`
+
+生成された URL をブラウザで開き、Bot をサーバーに招待します。
+
+---
+
+## よく使うコマンド
+
+```bash
+pnpm dev              # 全アプリをまとめて起動（開発モード）
+pnpm build            # 本番用ビルド
+pnpm typecheck        # 型エラーチェック
+pnpm lint             # コードスタイルチェック
+pnpm docker:up        # DB + Redis 起動
+pnpm docker:down      # DB + Redis 停止
+pnpm db:studio        # DB 管理画面を開く
+pnpm db:migrate       # DB スキーマを最新に更新
+pnpm db:seed          # 初期データを再投入
+```
+
+---
+
+## トラブルシューティング
+
+### `pnpm install` でエラーが出る
+
+Node.js のバージョンが古い可能性があります。`node -v` で 20 以上か確認してください。
+
+### `pnpm db:migrate` で接続エラーが出る
+
+Docker が起動していないか、起動途中の可能性があります。
+```bash
+pnpm docker:up
+# 10秒ほど待ってから
+pnpm db:migrate
+```
+
+### Bot がオフラインのまま
+
+`.env` の `DISCORD_BOT_TOKEN` が正しいか確認してください。
+トークンは Discord Developer Portal → Bot → **Reset Token** で再発行できます（再発行すると古いトークンは無効になります）。
+
+---
+
+## プロジェクト構成
 
 ```
 lunaria/
 ├── apps/
-│   ├── api/          # Fastify REST API (port 4000)
-│   ├── bot/          # discord.js v14 bot
-│   ├── dashboard/    # Next.js 14 App Router dashboard (port 3000)
-│   └── worker/       # BullMQ background job workers
+│   ├── api/          # REST API サーバー (Fastify, ポート 4000)
+│   ├── bot/          # Discord Bot (discord.js)
+│   ├── dashboard/    # 管理ダッシュボード (Next.js, ポート 3000)
+│   └── worker/       # バックグラウンドジョブ (BullMQ)
 └── packages/
-    ├── db/           # Prisma client + audit log + RBAC helpers
-    ├── types/        # Shared TypeScript types
-    ├── shared/       # Utilities, constants, Zod schemas
-    ├── plugin-sdk/   # Plugin registry (15 plugins)
-    ├── rule-engine/  # Trigger → Condition → Action engine
-    └── ui/           # Shared React UI components
-```
-
-**Stack:** TypeScript · Fastify · discord.js v14 · Next.js 14 · Prisma · PostgreSQL · Redis · BullMQ · pnpm workspaces · Turbo
-
----
-
-## Prerequisites
-
-- Node.js 20+
-- pnpm 9+
-- Docker (for local Postgres + Redis)
-
----
-
-## Quick Start
-
-```bash
-# 1. Clone and install dependencies
-git clone <repo>
-cd lunaria
-pnpm install
-
-# 2. Start infrastructure
-docker compose up -d
-
-# 3. Configure environment
-cp .env.example .env
-# Edit .env with your Discord credentials and secrets
-
-# 4. Run database migrations + seed
-pnpm db:migrate
-pnpm db:seed
-
-# 5. Start all services in development mode
-pnpm dev
-```
-
-Services:
-- Dashboard: http://localhost:3000
-- API: http://localhost:4000
-- API Docs (Swagger): http://localhost:4000/docs
-
----
-
-## Environment Variables
-
-See `.env.example` for all required variables. Key ones:
-
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `REDIS_URL` | Redis connection string |
-| `DISCORD_BOT_TOKEN` | Bot token from Discord Developer Portal |
-| `DISCORD_CLIENT_ID` | OAuth2 client ID |
-| `DISCORD_CLIENT_SECRET` | OAuth2 client secret |
-| `JWT_SECRET` | JWT signing secret (min 32 chars) |
-| `BOT_INTERNAL_SECRET` | Shared secret for bot→API requests |
-| `NEXT_PUBLIC_API_URL` | API base URL for dashboard client |
-
----
-
-## Database
-
-```bash
-pnpm db:generate    # Generate Prisma client
-pnpm db:migrate     # Run migrations (dev)
-pnpm db:seed        # Seed dev data
-pnpm db:studio      # Open Prisma Studio
-```
-
----
-
-## Plugin System
-
-Plugins are defined in `packages/plugin-sdk/src/index.ts`. Each plugin has:
-- `pluginKey` — unique identifier
-- `name`, `description`, `category`
-- `billingTier` — `free` | `pro` | `enterprise`
-- `defaultConfig` — JSON config schema
-- `isStub` — if true, cannot be enabled (stub/planned feature)
-
-**Active plugins (12):** quote, poll, event, lfg, team_split, faq, reminder, moderation, daily_content, auto_response, analytics, template
-
-**Stub plugins (3):** hoyolink, voice_consent, external_server
-
----
-
-## Rule Engine
-
-Rules follow a **Trigger → Conditions → Actions** pattern.
-
-**Triggers:** messageCreate, memberJoin, memberLeave, reactionAdd, scheduledTime, pollClose, eventStart, lfgPost
-
-**Conditions (9):** messageContains, memberHasRole, memberJoinedBefore, pollOptionWins, channelIs, timeOfDay, memberCountAbove, lfgGameIs, alwaysTrue
-
-**Actions (8):** sendMessage, addRole, removeRole, kickMember, banMember, dmUser, createLfgPost, pinMessage
-
-Rules can be tested via `POST /api/v1/guilds/:id/rules/:ruleId/test` (dry run, no actions executed).
-
----
-
-## RBAC
-
-Four system roles with hierarchical permissions:
-
-| Role | Key Permissions |
-|------|----------------|
-| `owner` | All 34 permissions |
-| `admin` | All except guild.manage, rbac.manage |
-| `moderator` | View + moderation.manage |
-| `member` | View-only access |
-
-Custom role overrides can be created per guild, mapping Discord roles to permission sets.
-
----
-
-## API
-
-Base URL: `http://localhost:4000/api/v1`
-
-All responses use the envelope format:
-```json
-{ "success": true, "data": { ... } }
-{ "success": false, "error": { "code": "NOT_FOUND", "message": "..." } }
-```
-
-Authentication: Discord OAuth2 → JWT stored in `HttpOnly` cookie.
-
-See Swagger docs at `/docs` for full API reference.
-
----
-
-## Dashboard
-
-Built with Next.js 14 App Router, dark theme (zinc palette), server components by default.
-
-All guild management pages are under `/dashboard/[guildId]/`:
-plugins, rules, quotes, polls, events, lfg, team-splits, faqs, reminders, rbac, auto-responses, daily-content, moderation, analytics, audit-logs, config-versions
-
----
-
-## Worker
-
-Background jobs run via BullMQ:
-- **daily_content** — Posts scheduled content to Discord channels
-- **reminder** — Sends reminders via DM or channel mention
-- **analytics_aggregate** — Hourly rollup of analytics events
-- **moderation_expire** — Expires time-limited mod actions
-- **scheduled_rule** — Runs rules with `scheduledTime` trigger
-
----
-
-## Development Commands
-
-```bash
-pnpm dev              # Start all apps in watch mode
-pnpm build            # Build all packages + apps
-pnpm lint             # ESLint across all workspaces
-pnpm typecheck        # tsc --noEmit across all workspaces
-pnpm test             # Run tests
+    ├── db/           # データベース操作 (Prisma)
+    ├── types/        # 型定義
+    ├── shared/       # 共通ユーティリティ
+    ├── plugin-sdk/   # プラグイン定義 (15種類)
+    ├── rule-engine/  # ルールエンジン
+    └── ui/           # UI コンポーネント
 ```
