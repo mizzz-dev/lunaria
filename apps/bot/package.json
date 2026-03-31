@@ -1,0 +1,29 @@
+{
+  "name": "@lunaria/bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "deploy-commands": "tsx src/deploy-commands.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@discordjs/rest": "^2.3.0",
+    "@lunaria/db": "workspace:*",
+    "@lunaria/rule-engine": "workspace:*",
+    "@lunaria/shared": "workspace:*",
+    "@lunaria/types": "workspace:*",
+    "discord-api-types": "^0.37.97",
+    "discord.js": "^14.15.3",
+    "undici": "^6.19.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "*",
+    "tsx": "*",
+    "typescript": "*"
+  }
+}
