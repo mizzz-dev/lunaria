@@ -65,7 +65,7 @@ export async function execute(oldState: VoiceState, newState: VoiceState): Promi
       });
       if (tempRecord) {
         const channel = newState.guild.channels.cache.get(oldState.channelId);
-        const memberCount = channel && 'members' in channel ? channel.members.size : 0;
+        const memberCount = channel?.isVoiceBased() ? channel.members.size : 0;
         if (memberCount === 0) {
           try {
             await channel?.delete('Temp VC empty');
@@ -102,7 +102,7 @@ export async function execute(oldState: VoiceState, newState: VoiceState): Promi
   // Post log embed
   try {
     const logChannel = await client.channels.fetch(logConfig.channelId);
-    if (!logChannel?.isTextBased()) return;
+    if (!logChannel?.isTextBased() || !('send' in logChannel)) return;
 
     const member = newState.member ?? oldState.member;
     const color = eventType === 'join' ? 0x22c55e : eventType === 'leave' ? 0xef4444 : 0xf59e0b;

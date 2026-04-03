@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 
 interface AuditLog { id: string; action: string; actorId: string | null; targetType: string | null; targetId: string | null; createdAt: string }
 interface AuditData { items: AuditLog[]; total: number }

@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 interface Event { id: string; title: string; status: string; startsAt: string }
 export default async function EventsPage({ params }: { params: { guildId: string } }) {
   const { guildId } = params;

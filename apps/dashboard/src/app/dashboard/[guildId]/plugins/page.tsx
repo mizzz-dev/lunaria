@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 import Link from 'next/link';
 
 export default async function PluginsPage({ params }: { params: { guildId: string } }) {

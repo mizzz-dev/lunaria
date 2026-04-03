@@ -1,4 +1,4 @@
-import { api } from '../../../lib/api.js';
+import { api } from '../../../lib/api';
 
 export default async function GuildOverviewPage({ params }: { params: { guildId: string } }) {
   const { guildId } = params;

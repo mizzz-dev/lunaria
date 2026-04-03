@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 
 interface Quote { id: string; content: string; author: string; tags: string[]; createdAt: string }
 interface QuoteData { items: Quote[]; total: number }

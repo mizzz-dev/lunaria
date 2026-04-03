@@ -59,7 +59,7 @@ export async function handleLevelXp(message: Message, guildId: string): Promise<
       try {
         const channelId = config.levelUpChannelId ?? message.channel.id;
         const channel = await client.channels.fetch(channelId);
-        if (channel?.isTextBased()) {
+        if (channel?.isTextBased() && 'send' in channel) {
           const msg = config.levelUpMessage
             .replace(/{user}/g, `<@${userId}>`)
             .replace(/{level}/g, String(newLevel))

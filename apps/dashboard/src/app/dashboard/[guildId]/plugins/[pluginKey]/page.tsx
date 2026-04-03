@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { api } from '../../../../../lib/api.js';
+import { api } from '../../../../../lib/api';
 import { useParams } from 'next/navigation';
 
 interface PluginDetail { pluginKey: string; name: string; description: string; enabled: boolean; config: Record<string, unknown>; isStub?: boolean; stubNote?: string }

@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 interface LfgPost { id: string; title: string; game: string | null; status: string; createdAt: string }
 export default async function LfgPage({ params }: { params: { guildId: string } }) {
   const { guildId } = params;

@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 interface AutoResponse { id: string; trigger: string; response: string; matchType: string; enabled: boolean }
 export default async function AutoResponsesPage({ params }: { params: { guildId: string } }) {
   const { guildId } = params;

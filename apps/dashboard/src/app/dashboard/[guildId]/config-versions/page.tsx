@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 import { useParams } from 'next/navigation';
 
 interface ConfigVersion { id: string; scope: string; version: number; changedBy: string; changeNote: string | null; createdAt: string }

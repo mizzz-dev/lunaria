@@ -6,7 +6,10 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../packages/db/src/__generated__/prisma"
 }
+// Note: Output path is set to a custom location so prisma generate works
+// in the pnpm workspace without conflicting with the hoisted @prisma/client.
 
 datasource db {
   provider = "postgresql"
@@ -888,7 +891,7 @@ model ConsentRecord {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, consentType])
+  @@unique([userId, consentType, guildId])
   @@index([guildId, consentType])
   @@map("consent_records")
 }

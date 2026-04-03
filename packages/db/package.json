@@ -12,16 +12,16 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && rm -rf dist/__generated__ && cp -r src/__generated__ dist/__generated__",
     "typecheck": "tsc --noEmit",
     "dev": "tsc --watch",
     "generate": "prisma generate --schema=../../prisma/schema.prisma"
   },
   "dependencies": {
-    "@prisma/client": "^5.15.0"
+    "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
-    "prisma": "^5.15.0",
+    "prisma": "^5.22.0",
     "typescript": "*"
   }
 }

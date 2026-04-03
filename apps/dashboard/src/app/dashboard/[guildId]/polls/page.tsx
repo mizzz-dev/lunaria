@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 interface Poll { id: string; title: string; closed: boolean; voteType: string; createdAt: string }
 export default async function PollsPage({ params }: { params: { guildId: string } }) {
   const { guildId } = params;

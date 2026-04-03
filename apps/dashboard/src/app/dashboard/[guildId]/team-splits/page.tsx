@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 interface Team { id: string; name: string; members: { userId: string }[] }
 interface TeamSplit { id: string; name: string; teams: Team[]; createdAt: string }
 export default async function TeamSplitsPage({ params }: { params: { guildId: string } }) {

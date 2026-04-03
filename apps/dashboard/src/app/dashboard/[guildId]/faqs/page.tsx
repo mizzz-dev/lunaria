@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 interface Faq { id: string; question: string; answer: string; category: string | null; order: number }
 export default async function FaqsPage({ params }: { params: { guildId: string } }) {
   const { guildId } = params;

@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { prisma, createAuditLog } from '@lunaria/db';
+import { prisma, createAuditLog, Prisma } from '@lunaria/db';
 import { ok, err } from '@lunaria/shared';
 import { ErrorCodes } from '@lunaria/types';
 import { z } from 'zod';
@@ -67,7 +67,7 @@ export const componentRoutes: FastifyPluginAsync = async (app) => {
       const userRecord = await prisma.user.findUnique({ where: { id: request.user.userId } });
 
       const component = await prisma.customComponent.create({
-        data: { guildId: guild.id, ...body, createdBy: userRecord?.discordId ?? null },
+        data: { guildId: guild.id, ...body, actionConfig: body.actionConfig as Prisma.InputJsonValue, createdBy: userRecord?.discordId ?? null },
       });
 
       await createAuditLog({
@@ -116,9 +116,11 @@ export const componentRoutes: FastifyPluginAsync = async (app) => {
       if (!component) return reply.status(404).send(err(ErrorCodes.NOT_FOUND, 'Component not found'));
 
       const body = ComponentUpdateSchema.parse(request.body);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { actionConfig: _ac, ...bodyRest } = body;
       const updated = await prisma.customComponent.update({
         where: { id: componentId },
-        data: body,
+        data: { ...bodyRest, ...(body.actionConfig !== undefined ? { actionConfig: body.actionConfig as Prisma.InputJsonValue } : {}) },
       });
 
       await createAuditLog({

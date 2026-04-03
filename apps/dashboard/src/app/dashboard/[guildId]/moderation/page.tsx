@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 
 interface ModerationRule { id: string; name: string; ruleType: string; enabled: boolean; action: string }
 interface ModerationAction { id: string; actionType: string; targetId: string; reason: string | null; createdAt: string }

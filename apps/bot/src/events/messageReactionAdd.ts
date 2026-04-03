@@ -51,7 +51,7 @@ export async function execute(
     // Log translation request
     if (transConfig.logChannelId) {
       const logChannel = await client.channels.fetch(transConfig.logChannelId).catch(() => null);
-      if (logChannel?.isTextBased()) {
+      if (logChannel?.isTextBased() && 'send' in logChannel) {
         await logChannel.send(
           `🌐 翻訳リクエスト: <@${user.id}> が [メッセージ](${message.url}) に ${emoji} を付けました`,
         );

@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from './__generated__/prisma/index.js';
 import { prisma } from './client.js';
 
 export interface SaveConfigVersionInput {

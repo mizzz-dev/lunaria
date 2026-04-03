@@ -37,7 +37,7 @@ async function processScheduledRule(job: Job<ScheduledRuleJobData>): Promise<voi
 
   const ctx: RuleContext = {
     guildId,
-    trigger: 'scheduledTime',
+    trigger: 'scheduled',
     eventData: { triggeredAt, source: 'scheduler' },
   };
 

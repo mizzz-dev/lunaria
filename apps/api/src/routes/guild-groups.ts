@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { prisma } from '@lunaria/db';
+import { prisma, Prisma } from '@lunaria/db';
 import { ok, err } from '@lunaria/shared';
 import { ErrorCodes } from '@lunaria/types';
 import { z } from 'zod';
@@ -115,7 +115,7 @@ export const guildGroupRoutes: FastifyPluginAsync = async (app) => {
           groupId: group.id,
           fromGuildId: group.ownerGuildId,
           content: body.content,
-          embedData: body.embedData ?? null,
+          embedData: body.embedData == null ? Prisma.DbNull : body.embedData as Prisma.InputJsonValue,
           sentBy: userRecord?.discordId ?? null,
           targets: {
             create: body.targets.map((t) => ({

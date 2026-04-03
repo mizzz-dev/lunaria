@@ -1,5 +1,5 @@
-import { Sidebar } from '../../../components/Sidebar.js';
-import { api } from '../../../lib/api.js';
+import { Sidebar } from '../../../components/Sidebar';
+import { api } from '../../../lib/api';
 
 export default async function GuildLayout({ children, params }: { children: React.ReactNode; params: { guildId: string } }) {
   const { guildId } = params;

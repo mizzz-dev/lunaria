@@ -43,7 +43,7 @@ export async function execute(member: GuildMember): Promise<void> {
     if (welcomeConfig.channelId) {
       try {
         const channel = await client.channels.fetch(welcomeConfig.channelId);
-        if (channel?.isTextBased()) {
+        if (channel?.isTextBased() && 'send' in channel) {
           const embed = new EmbedBuilder()
             .setColor(welcomeConfig.embedColor)
             .setDescription(formatMsg(welcomeConfig.message))

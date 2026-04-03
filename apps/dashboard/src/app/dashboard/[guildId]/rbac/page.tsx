@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 interface RoleOverride { id: string; roleKey: string; discordRoles: string[]; permissions: string[] }
 interface GuildMember { id: string; discordId: string; systemRole: string }
 export default async function RbacPage({ params }: { params: { guildId: string } }) {

@@ -55,7 +55,7 @@ export const execute: Command['execute'] = async (interaction: ChatInputCommandI
       ? await interaction.guild.channels.fetch(config.panelChannelId).catch(() => null)
       : interaction.channel;
 
-    if (!targetChannel?.isTextBased()) {
+    if (!targetChannel?.isTextBased() || !('send' in targetChannel)) {
       await interaction.editReply('❌ パネルを送信するチャンネルが見つかりません。');
       return;
     }

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { api } from '../../../../../lib/api.js';
+import { api } from '../../../../../lib/api';
 import { useParams, useRouter } from 'next/navigation';
 
 export default function RuleEditorPage() {

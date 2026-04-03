@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 interface DailyContentJob { id: string; contentType: string; channelId: string; cronExpression: string; enabled: boolean; tags: string[] }
 interface DailyContentRun { id: string; jobId: string; status: string; createdAt: string; error: string | null }
 export default async function DailyContentPage({ params }: { params: { guildId: string } }) {

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { api } from '../../lib/api.js';
+import { api } from '../../lib/api';
 import { discordGuildIconUrl } from '@lunaria/shared';
 
 export default async function DashboardPage() {

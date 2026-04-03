@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from './__generated__/prisma/index.js';
 import { prisma } from './client.js';
 
 export interface CreateAuditLogInput {

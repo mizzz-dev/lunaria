@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 
 interface Summary { memberCount: number; messageCount: number; moderationCount: number; pollCount: number; eventCount: number; lfgCount: number }
 

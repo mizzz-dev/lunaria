@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { prisma, createAuditLog } from '@lunaria/db';
+import { prisma, createAuditLog, Prisma } from '@lunaria/db';
 import { ok, err } from '@lunaria/shared';
 import { ErrorCodes } from '@lunaria/types';
 import { z } from 'zod';
@@ -63,12 +63,15 @@ export const scheduledMessageRoutes: FastifyPluginAsync = async (app) => {
       const body = ScheduledMessageCreateSchema.parse(request.body);
       const userRecord = await prisma.user.findUnique({ where: { id: request.user.userId } });
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { embedData: _embedData, ...bodyRest } = body;
       const message = await prisma.scheduledMessage.create({
         data: {
           guildId: guild.id,
-          ...body,
+          ...bodyRest,
           scheduledAt: new Date(body.scheduledAt),
           createdBy: userRecord?.discordId ?? null,
+          embedData: body.embedData == null ? Prisma.DbNull : body.embedData as Prisma.InputJsonValue,
         },
       });
 
@@ -119,11 +122,14 @@ export const scheduledMessageRoutes: FastifyPluginAsync = async (app) => {
       if (message.status === 'sent') return reply.status(409).send(err(ErrorCodes.CONFLICT, 'Cannot update a sent message'));
 
       const body = ScheduledMessageUpdateSchema.parse(request.body);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { embedData: _embedDataU, ...bodyRestU } = body;
       const updated = await prisma.scheduledMessage.update({
         where: { id: messageId },
         data: {
-          ...body,
+          ...bodyRestU,
           ...(body.scheduledAt ? { scheduledAt: new Date(body.scheduledAt) } : {}),
+          ...(body.embedData !== undefined ? { embedData: body.embedData === null ? Prisma.DbNull : body.embedData as Prisma.InputJsonValue } : {}),
         },
       });
 

@@ -1,4 +1,4 @@
-import { ChannelType, PermissionFlagsBits, type Interaction } from 'discord.js';
+import { ChannelType, PermissionFlagsBits, type ButtonInteraction, type CacheType, type Interaction } from 'discord.js';
 import { prisma } from '@lunaria/db';
 import { commands } from '../client.js';
 
@@ -58,8 +58,8 @@ export async function execute(interaction: Interaction): Promise<void> {
 
 // ── Ticket open handler ──────────────────────────────────────────────────────
 
-async function handleTicketOpen(interaction: Extract<Interaction, { isButton(): true }>): Promise<void> {
-  if (!interaction.isButton() || !interaction.guild) return;
+async function handleTicketOpen(interaction: ButtonInteraction<CacheType>): Promise<void> {
+  if (!interaction.guild) return;
   await interaction.deferReply({ ephemeral: true });
 
   const guild = await prisma.guild.findUnique({ where: { discordId: interaction.guild.id } });
@@ -123,10 +123,10 @@ async function handleTicketOpen(interaction: Extract<Interaction, { isButton(): 
 type CustomComponentRecord = Awaited<ReturnType<typeof prisma.customComponent.findUnique>> & {};
 
 async function handleCustomComponent(
-  interaction: Extract<Interaction, { isButton(): true }>,
+  interaction: ButtonInteraction<CacheType>,
   component: NonNullable<CustomComponentRecord>,
 ): Promise<void> {
-  if (!interaction.isButton() || !interaction.guild) return;
+  if (!interaction.guild) return;
 
   const config = component.actionConfig as Record<string, unknown>;
 

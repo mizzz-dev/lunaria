@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@lunaria/db": "workspace:*",
+    "@lunaria/rule-engine": "workspace:*",
     "@lunaria/shared": "workspace:*",
     "@lunaria/types": "workspace:*",
     "bullmq": "^5.8.2",

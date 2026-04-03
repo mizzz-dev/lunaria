@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 interface Reminder { id: string; content: string; recurrence: string; remindAt: string; sent: boolean }
 export default async function RemindersPage({ params }: { params: { guildId: string } }) {
   const { guildId } = params;

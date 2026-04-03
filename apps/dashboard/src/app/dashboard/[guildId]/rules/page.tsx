@@ -1,4 +1,4 @@
-import { api } from '../../../../lib/api.js';
+import { api } from '../../../../lib/api';
 import Link from 'next/link';
 
 interface Rule { id: string; name: string; trigger: string; enabled: boolean; priority: number; conditions: unknown[]; actions: unknown[] }

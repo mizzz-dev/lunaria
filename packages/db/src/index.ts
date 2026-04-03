@@ -1,4 +1,5 @@
 export { prisma } from './client.js';
+export { Prisma } from './__generated__/prisma/index.js';
 export { createAuditLog } from './audit.js';
 export type { CreateAuditLogInput } from './audit.js';
 export { saveConfigVersion, getConfigVersions } from './config-version.js';
@@ -46,5 +47,28 @@ export type {
   ConsentRecord,
   ExternalServer,
   ExternalServerAction,
-  Prisma,
-} from '@prisma/client';
+  // New feature models
+  WelcomeConfig,
+  LevelConfig,
+  UserLevel,
+  LevelReward,
+  TicketConfig,
+  Ticket,
+  TempVcConfig,
+  TempVoiceChannel,
+  PollRoleReward,
+  ScheduledMessage,
+  VoiceLogConfig,
+  VoiceLog,
+  CustomComponent,
+  ComponentInteraction,
+  AiModerationConfig,
+  AiModerationScan,
+  TranslationConfig,
+  GuildGroup,
+  GuildGroupMember,
+  CrossServerBroadcast,
+  BroadcastTarget,
+  NotificationSubscription,
+  Notification,
+} from './__generated__/prisma/index.js';
