@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance, type FastifyRequest, type FastifyReply } from 'fastify';
+import crypto from 'node:crypto';
 import fastifyCors from '@fastify/cors';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
@@ -30,6 +31,8 @@ import { analyticsRoutes } from './routes/guilds/analytics.js';
 import { membershipRoutes } from './routes/guilds/memberships.js';
 import { roleRoutes } from './routes/guilds/roles.js';
 import { templateRoutes } from './routes/templates.js';
+import { dashboardLayoutRoutes } from './routes/guilds/dashboard-layout.js';
+import { applyRateLimit } from './lib/rate-limit.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -52,10 +55,29 @@ declare module '@fastify/jwt' {
 }
 
 export async function buildApp(): Promise<FastifyInstance> {
-  const app = Fastify({ logger: true });
+  const app = Fastify({
+    logger: {
+      level: process.env['LOG_LEVEL'] ?? 'info',
+    },
+    requestIdHeader: 'x-request-id',
+    genReqId: () => crypto.randomUUID(),
+  });
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+
+  app.get('/healthz', async () => ({ ok: true }));
+
+  app.addHook('onRequest', async (request, reply) => {
+    if (request.url.startsWith('/api/docs')) return;
+    const max = parseInt(process.env['RATE_LIMIT_MAX'] ?? '120', 10);
+    const windowSec = parseInt(process.env['RATE_LIMIT_WINDOW_SEC'] ?? '60', 10);
+    await applyRateLimit(request, reply, {
+      keyPrefix: process.env['RATE_LIMIT_KEY_PREFIX'] ?? 'rl:api',
+      max,
+      windowSec,
+    });
+  });
 
   // CORS
   await app.register(fastifyCors, {
@@ -161,6 +183,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(analyticsRoutes, { prefix: '/api/v1/guilds' });
   await app.register(membershipRoutes, { prefix: '/api/v1/guilds' });
   await app.register(roleRoutes, { prefix: '/api/v1/guilds' });
+  await app.register(dashboardLayoutRoutes, { prefix: '/api/v1/guilds' });
   await app.register(templateRoutes, { prefix: '/api/v1' });
 
   // Global error handler

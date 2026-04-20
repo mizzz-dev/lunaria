@@ -1,10 +1,12 @@
+import crypto from 'node:crypto';
+
 // =============================================
 // Lunaria Worker – Entry Point
 // =============================================
 
 const required = ['REDIS_URL', 'DATABASE_URL'] as const;
 for (const key of required) {
-  if (!process.env[key]) { console.error(`[worker] Missing env: ${key}`); process.exit(1); }
+  if (!process.env[key]) { console.error(JSON.stringify({ ts: new Date().toISOString(), service: 'worker', level: 'error', event: 'env.missing', key })); process.exit(1); }
 }
 
 import { dailyContentWorker } from './workers/daily-content.js';
@@ -14,13 +16,14 @@ import { moderationExpireWorker } from './workers/moderation-expire.js';
 import { scheduledRuleWorker } from './workers/scheduled-rule.js';
 import { startScheduler, stopScheduler } from './scheduler.js';
 
-console.log('[worker] Starting Lunaria Worker...');
-console.log('[worker] Workers: daily_content, reminder, analytics_aggregate, moderation_expire, scheduled_rule');
+const correlationId = crypto.randomUUID();
+console.log(JSON.stringify({ ts: new Date().toISOString(), service: 'worker', level: 'info', event: 'startup.begin', correlationId }));
+console.log(JSON.stringify({ ts: new Date().toISOString(), service: 'worker', level: 'info', event: 'workers.registered', workers: ['daily_content', 'reminder', 'analytics_aggregate', 'moderation_expire', 'scheduled_rule'] }));
 
 startScheduler();
 
 async function shutdown(): Promise<void> {
-  console.log('[worker] Shutting down...');
+  console.log(JSON.stringify({ ts: new Date().toISOString(), service: 'worker', level: 'info', event: 'shutdown.begin', correlationId }));
   stopScheduler();
   await Promise.all([
     dailyContentWorker.close(),
@@ -35,4 +38,4 @@ async function shutdown(): Promise<void> {
 process.on('SIGTERM', () => void shutdown());
 process.on('SIGINT', () => void shutdown());
 
-console.log('[worker] Ready.');
+console.log(JSON.stringify({ ts: new Date().toISOString(), service: 'worker', level: 'info', event: 'startup.ready', correlationId }));

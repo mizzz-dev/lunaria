@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master, work]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Prisma generate
+        run: pnpm db:generate
+      - name: Typecheck
+        run: pnpm -w typecheck
+      - name: Lint
+        run: pnpm -w lint
+      - name: Test
+        run: pnpm -w test
+      - name: Build
+        run: pnpm -w build

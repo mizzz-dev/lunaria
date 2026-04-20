@@ -1,5 +1,22 @@
 # Lunaria — Implementation Progress
 
+## 2026-04-20 Sprint Kickoff Plan
+
+### 現状棚卸し
+- `pnpm -w typecheck/build/test` は `@lunaria/db` の Prisma 型ずれで失敗。
+- `pnpm -w lint` は `@lunaria/api` の lint 対象解決で失敗。
+- Docker はこの実行環境に未導入 (`docker: command not found`) のためローカル起動確認は未実施。
+- CI Workflow ファイルが未整備（`.github/workflows` が空）。
+
+### 今スプリントの短期実装計画（実装優先）
+1. テスト基盤を最低限起動（API/Bot/Worker/Dashboard/Prisma smoke）。
+2. Prisma/TypeScript のベースライン修復（generate 手順・依存整合）。
+3. API rate limit を Redis 優先 + memory fallback へ移行し 429 形式を統一。
+4. Analytics 画面を SSE でリアルタイム更新（再接続 + 手動 Refresh）。
+5. Dashboard Top にレイアウト編集 MVP（widget registry / drag swap / save/reset）。
+6. API/Bot/Worker の最小可観測性（request/correlation ログ）を揃える。
+7. docs / env / OpenAPI / CI を同期して PR ベースラインを作る。
+
 ## Status: MVP Complete
 
 All core systems have been implemented. See below for detailed status per area.

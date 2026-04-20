@@ -183,3 +183,11 @@ pnpm lint             # ESLint across all workspaces
 pnpm typecheck        # tsc --noEmit across all workspaces
 pnpm test             # Run tests
 ```
+
+## Sprint Baseline (2026-04)
+
+- API: Redis-first rate limit (`RATE_LIMIT_*`) with memory fallback and unified 429 payload.
+- API: SSE endpoint `GET /api/v1/guilds/:guildId/analytics/stream` for lightweight real-time updates.
+- Dashboard: Analytics page now consumes SSE with reconnect/fallback + manual refresh.
+- Dashboard Top: widget registry + edit mode + drag-to-swap + save/reset layout via API.
+- Observability: structured JSON startup logs for Bot/Worker + request ID propagation in API logs.
