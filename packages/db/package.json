@@ -15,7 +15,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "tsc --watch",
-    "generate": "prisma generate --schema=../../prisma/schema.prisma"
+    "generate": "prisma generate --schema=../../prisma/schema.prisma",
+    "test": "prisma validate --schema=../../prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^5.15.0"

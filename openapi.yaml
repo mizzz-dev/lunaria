@@ -1663,3 +1663,71 @@ paths:
       responses:
         '200':
           description: 適用結果
+
+  /guilds/{guildId}/analytics/stream:
+    get:
+      tags: [analytics]
+      summary: Analytics summary の SSE ストリーム
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: text/event-stream
+
+  /guilds/{guildId}/dashboard/widgets:
+    get:
+      tags: [guilds]
+      summary: RBAC 反映済み dashboard widget 一覧
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: widget list
+
+  /guilds/{guildId}/dashboard/layout:
+    get:
+      tags: [guilds]
+      summary: dashboard layout 取得
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: current layout
+    put:
+      tags: [guilds]
+      summary: dashboard layout 更新
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: updated layout
+
+  /guilds/{guildId}/dashboard/layout/reset:
+    post:
+      tags: [guilds]
+      summary: dashboard layout を初期化
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: reset layout

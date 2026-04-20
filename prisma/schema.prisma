@@ -50,6 +50,7 @@ model Guild {
   ownerId     String    // Discord snowflake of guild owner
   botJoinedAt DateTime?
   active      Boolean   @default(true)
+  dashboardLayout Json?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

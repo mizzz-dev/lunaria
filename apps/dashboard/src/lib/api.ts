@@ -33,6 +33,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const api = {
   get: <T>(path: string) => request<T>(path, { method: 'GET' }),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body: body !== undefined ? JSON.stringify(body) : undefined }),
+  put: <T>(path: string, body: unknown) => request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) => request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 
@@ -43,6 +44,10 @@ export const api = {
   // Guild
   getGuild: (guildId: string) => api.get<{ id: string; name: string; icon: string | null }>(`/guilds/${guildId}`),
   getDashboard: (guildId: string) => api.get<{ memberCount: number; enabledPlugins: number; ruleCount: number; recentAuditLogs: unknown[] }>(`/guilds/${guildId}/dashboard`),
+  getDashboardLayout: (guildId: string) => api.get<{ order: string[]; hidden: string[]; updatedAt: string }>(`/guilds/${guildId}/dashboard/layout`),
+  updateDashboardLayout: (guildId: string, body: { order: string[]; hidden: string[]; updatedAt: string }) => api.put(`/guilds/${guildId}/dashboard/layout`, body),
+  resetDashboardLayout: (guildId: string) => api.post(`/guilds/${guildId}/dashboard/layout/reset`),
+  getDashboardWidgets: (guildId: string) => api.get<{ guildId: string; widgets: Array<{ key: string; label: string; permission: string }> }>(`/guilds/${guildId}/dashboard/widgets`),
   getSettings: (guildId: string) => api.get(`/guilds/${guildId}/settings`),
   updateSettings: (guildId: string, body: unknown) => api.patch(`/guilds/${guildId}/settings`, body),
 

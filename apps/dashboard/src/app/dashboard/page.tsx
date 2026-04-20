@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { api } from '../../lib/api.js';
-import { discordGuildIconUrl } from '@lunaria/shared';
+
+function discordGuildIconUrl(guildId: string, iconHash: string | null, size = 128): string | null {
+  if (!iconHash) return null;
+  const ext = iconHash.startsWith('a_') ? 'gif' : 'png';
+  return `https://cdn.discordapp.com/icons/${guildId}/${iconHash}.${ext}?size=${size}`;
+}
 
 export default async function DashboardPage() {
   let guilds: Array<{ id: string; name: string; icon: string | null; botPresent: boolean }> = [];

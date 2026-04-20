@@ -3,17 +3,24 @@
 // =============================================
 
 import { pathToFileURL } from 'node:url';
+import crypto from 'node:crypto';
 import { readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { client, commands } from './client.js';
 import type { Command } from './types.js';
 
+function log(level: 'info' | 'warn' | 'error', event: string, data: Record<string, unknown> = {}): void {
+  const payload = { ts: new Date().toISOString(), service: 'bot', level, event, ...data };
+  // eslint-disable-next-line no-console
+  console[level](JSON.stringify(payload));
+}
+
 // ---- Env validation ----
 const required = ['DISCORD_BOT_TOKEN', 'DISCORD_CLIENT_ID', 'API_BASE_URL', 'DATABASE_URL', 'BOT_INTERNAL_SECRET'] as const;
 for (const key of required) {
   if (!process.env[key]) {
-    console.error(`[bot] Missing required environment variable: ${key}`);
+    log('error', 'env.missing', { key });
     process.exit(1);
   }
 }
@@ -27,7 +34,7 @@ async function loadEvents(): Promise<void> {
   try {
     files = readdirSync(eventsDir).filter((f) => f.endsWith('.js') || f.endsWith('.ts'));
   } catch {
-    console.warn('[bot] No events directory found, skipping event loading.');
+    log('warn', 'events.dir_missing');
     return;
   }
 
@@ -42,7 +49,7 @@ async function loadEvents(): Promise<void> {
 
     const event = module.default ?? module;
     if (!event.name || !event.execute) {
-      console.warn(`[bot] Event file ${file} is missing name or execute export, skipping.`);
+      log('warn', 'events.invalid_export', { file });
       continue;
     }
 
@@ -52,7 +59,7 @@ async function loadEvents(): Promise<void> {
       client.on(event.name, (...args) => void event.execute!(...args));
     }
 
-    console.log(`[bot] Loaded event: ${event.name}`);
+    log('info', 'events.loaded', { event: event.name });
   }
 }
 
@@ -63,7 +70,7 @@ async function loadCommands(): Promise<void> {
   try {
     files = readdirSync(commandsDir).filter((f) => f.endsWith('.js') || f.endsWith('.ts'));
   } catch {
-    console.warn('[bot] No commands directory found, skipping command loading.');
+    log('warn', 'commands.dir_missing');
     return;
   }
 
@@ -73,25 +80,28 @@ async function loadCommands(): Promise<void> {
     const command: Command | undefined = module.default ?? (module.data && module.execute ? (module as Command) : undefined);
 
     if (!command?.data || !command?.execute) {
-      console.warn(`[bot] Command file ${file} is missing data or execute export, skipping.`);
+      log('warn', 'commands.invalid_export', { file });
       continue;
     }
 
     commands.set(command.data.name, command);
-    console.log(`[bot] Loaded command: ${command.data.name}`);
+    log('info', 'commands.loaded', { command: command.data.name });
   }
 }
 
 // ---- Bootstrap ----
 async function main(): Promise<void> {
+  const correlationId = crypto.randomUUID();
+  log('info', 'startup.begin', { correlationId });
   await loadEvents();
   await loadCommands();
 
   const token = process.env['DISCORD_BOT_TOKEN']!;
   await client.login(token);
+  log('info', 'startup.ready', { correlationId });
 }
 
 main().catch((err) => {
-  console.error('[bot] Fatal startup error:', err);
+  log('error', 'startup.fatal', { error: err instanceof Error ? err.message : String(err) });
   process.exit(1);
 });
