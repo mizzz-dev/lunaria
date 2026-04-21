@@ -88,11 +88,20 @@ export const execute: Command['execute'] = async (interaction: ChatInputCommandI
   if (sub === 'grant') {
     const type = interaction.options.getString('type', true) as ConsentType;
 
-    await prisma.consentRecord.upsert({
-      where: { userId_consentType_guildId: { userId: user.id, consentType: type, guildId: guildId ?? '' } },
-      create: { userId: user.id, consentType: type, guildId: guildId ?? '', granted: true, grantedAt: new Date() },
-      update: { granted: true, grantedAt: new Date(), revokedAt: null },
+    const existing = await prisma.consentRecord.findFirst({
+      where: { userId: user.id, consentType: type, guildId: guildId ?? '' },
+      orderBy: { grantedAt: 'desc' },
     });
+    if (existing) {
+      await prisma.consentRecord.update({
+        where: { id: existing.id },
+        data: { granted: true, grantedAt: new Date(), revokedAt: null },
+      });
+    } else {
+      await prisma.consentRecord.create({
+        data: { userId: user.id, consentType: type, guildId: guildId ?? '', granted: true, grantedAt: new Date() },
+      });
+    }
 
     await interaction.editReply(`✅ **${CONSENT_LABELS[type]}** への同意を記録しました。`);
     return;
@@ -101,11 +110,20 @@ export const execute: Command['execute'] = async (interaction: ChatInputCommandI
   if (sub === 'revoke') {
     const type = interaction.options.getString('type', true) as ConsentType;
 
-    await prisma.consentRecord.upsert({
-      where: { userId_consentType_guildId: { userId: user.id, consentType: type, guildId: guildId ?? '' } },
-      create: { userId: user.id, consentType: type, guildId: guildId ?? '', granted: false },
-      update: { granted: false, revokedAt: new Date() },
+    const existing = await prisma.consentRecord.findFirst({
+      where: { userId: user.id, consentType: type, guildId: guildId ?? '' },
+      orderBy: { grantedAt: 'desc' },
     });
+    if (existing) {
+      await prisma.consentRecord.update({
+        where: { id: existing.id },
+        data: { granted: false, revokedAt: new Date() },
+      });
+    } else {
+      await prisma.consentRecord.create({
+        data: { userId: user.id, consentType: type, guildId: guildId ?? '', granted: false, revokedAt: new Date() },
+      });
+    }
 
     await interaction.editReply(`✅ **${CONSENT_LABELS[type]}** への同意を取り消しました。`);
   }

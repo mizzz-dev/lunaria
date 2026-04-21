@@ -65,9 +65,9 @@ export const execute: Command['execute'] = async (interaction: ChatInputCommandI
     const username = interaction.options.getString('username') ?? null;
 
     await prisma.gameLink.upsert({
-      where: { userId_game: { userId: user.id, game } },
-      create: { userId: user.id, game, uid, username },
-      update: { uid, username },
+      where: { userId_platform: { userId: user.id, platform: game } },
+      create: { userId: user.id, platform: game, platformId: uid, displayName: username },
+      update: { platformId: uid, displayName: username },
     });
 
     const embed = new EmbedBuilder()
@@ -97,7 +97,7 @@ export const execute: Command['execute'] = async (interaction: ChatInputCommandI
       .setTitle('🎮 リンク済みゲームアカウント')
       .setDescription(
         links
-          .map((l) => `**${GAME_LABELS[l.game as SupportedGame] ?? l.game}**: UID \`${l.uid}\`${l.username ? ` (${l.username})` : ''}`)
+          .map((l) => `**${GAME_LABELS[l.platform as SupportedGame] ?? l.platform}**: UID \`${l.platformId}\`${l.displayName ? ` (${l.displayName})` : ''}`)
           .join('\n'),
       )
       .setTimestamp();
@@ -108,12 +108,12 @@ export const execute: Command['execute'] = async (interaction: ChatInputCommandI
 
   if (sub === 'remove') {
     const game = interaction.options.getString('game', true);
-    const link = await prisma.gameLink.findUnique({ where: { userId_game: { userId: user.id, game } } });
+    const link = await prisma.gameLink.findUnique({ where: { userId_platform: { userId: user.id, platform: game } } });
     if (!link) {
       await interaction.editReply('❌ 指定されたゲームのリンクが見つかりません。');
       return;
     }
-    await prisma.gameLink.delete({ where: { userId_game: { userId: user.id, game } } });
+    await prisma.gameLink.delete({ where: { userId_platform: { userId: user.id, platform: game } } });
     await interaction.editReply(`✅ **${GAME_LABELS[game as SupportedGame] ?? game}** のリンクを解除しました。`);
   }
 };
