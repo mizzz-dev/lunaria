@@ -36,7 +36,7 @@ async function processScheduledRule(job: Job<ScheduledRuleJobData>): Promise<voi
         error: null,
         durationMs: 0,
       },
-    }).catch((e) => console.error('[scheduled-rule] Failed to persist run record:', e));
+    }).catch((e: unknown) => console.error('[scheduled-rule] Failed to persist run record:', e));
   }
 
   console.log(`[scheduled-rule] guild=${guildId} recorded ${rules.length} scheduled rule run(s)`);
