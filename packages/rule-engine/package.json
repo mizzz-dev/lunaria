@@ -4,11 +4,11 @@
   "private": true,
   "description": "Rule engine (Trigger → Condition → Action) for Lunaria",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./src/index.ts"
     }
   },
   "scripts": {

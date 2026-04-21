@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { prisma, createAuditLog, saveConfigVersion, hasPermission } from '@lunaria/db';
+import { prisma, createAuditLog, saveConfigVersion, hasPermission, Prisma } from '@lunaria/db';
 import { ok } from '@lunaria/shared';
 
 interface LayoutState {
@@ -60,7 +60,7 @@ export const dashboardLayoutRoutes: FastifyPluginAsync = async (app) => {
     if (nextLayout.order.length === 0) nextLayout.order = [...defaultLayout.order];
 
     const before = await prisma.guild.findUnique({ where: { id: guildId }, select: { dashboardLayout: true } });
-    await prisma.guild.update({ where: { id: guildId }, data: { dashboardLayout: nextLayout } });
+    await prisma.guild.update({ where: { id: guildId }, data: { dashboardLayout: nextLayout as unknown as Prisma.InputJsonValue } });
 
     await saveConfigVersion({
       guildId,
