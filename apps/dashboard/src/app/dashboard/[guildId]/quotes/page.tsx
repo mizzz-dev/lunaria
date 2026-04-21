@@ -18,7 +18,7 @@ export default async function QuotesPage({ params }: { params: { guildId: string
         {data.items.length === 0 && <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-400">No quotes yet.</div>}
         {data.items.map((q) => (
           <div key={q.id} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-zinc-200 italic">"{q.content}"</p>
+            <p className="text-zinc-200 italic">&ldquo;{q.content}&rdquo;</p>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-sm text-zinc-400">— {q.author}</span>
               <div className="flex gap-1">
